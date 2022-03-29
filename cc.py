@@ -1,7 +1,6 @@
 import socket
-import select
-import errno
 import sys
+import errno
 
 HEADER_LENGTH = 10
 
@@ -10,8 +9,6 @@ PORT = 1234
 my_username = input("Username: ")
 
 # Create a socket
-# socket.AF_INET - address family, IPv4, some otehr possible are AF_INET6, AF_BLUETOOTH, AF_UNIX
-# socket.SOCK_STREAM - TCP, conection-based, socket.SOCK_DGRAM - UDP, connectionless, datagrams, socket.SOCK_RAW - raw IP packets
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # Connect to a given ip and port
@@ -21,15 +18,13 @@ client_socket.connect((IP, PORT))
 client_socket.setblocking(False)
 
 # Prepare username and header and send them
-# We need to encode username to bytes, then count number of bytes and prepare header of fixed size, that we encode to bytes as well
 username = my_username.encode('utf-8')
 username_header = f"{len(username):<{HEADER_LENGTH}}".encode('utf-8')
 client_socket.send(username_header + username)
 
-
 while True:
 
-    # Wait for user to input a message
+    # username's input
     message = input(f'{my_username} > ')
 
     # If message is not empty - send it
@@ -40,6 +35,7 @@ while True:
         message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
         client_socket.send(message_header + message)
 
+
     try:
         # Now we want to loop over received messages (there might be more than one) and print them
         while True:
@@ -47,7 +43,7 @@ while True:
             # Receive our "header" containing username length, it's size is defined and constant
             username_header = client_socket.recv(HEADER_LENGTH)
 
-            # If we received no data, server gracefully closed a connection, for example using socket.close() or socket.shutdown(socket.SHUT_RDWR)
+            # If we received no data, server gracefully closed a connection
             if not len(username_header):
                 print('Connection closed by the server')
                 sys.exit()
@@ -58,13 +54,45 @@ while True:
             # Receive and decode username
             username = client_socket.recv(username_length).decode('utf-8')
 
-            # Now do the same for message (as we received username, we received whole message, there's no need to check if it has any length)
+            # Now do the same for message (as we received username, we received whole message)
             message_header = client_socket.recv(HEADER_LENGTH)
             message_length = int(message_header.decode('utf-8').strip())
             message = client_socket.recv(message_length).decode('utf-8')
 
+            if message == action_message:
+                def Thor(action_msg):
+                    # action_message can be: "run", "jump", "swim"
+                    if action_msg == "run":
+                        return "Would you like to run?".format(action_msg + "ing")
+                    elif action_msg == "train":
+                        return "how was your workout?".format(action_msg + "ing")
+                    elif action_msg == "swim":
+                        return "I cant swim".format(action_msg + "ing")
+                    else:
+                        return "Im bored".format(action_msg + "ing")
+
+
+                def Milen(action_msg):
+                    if action_msg == "run":
+                        return "Runnnn!!!".format(action_msg + "ing")
+                    elif action_msg == "workout":
+                        return "I do like to have workout everyday".format(action_msg + "ing")
+                    elif action_msg == "swim":
+                        return "who does not like to swiiiiim!!".format(action_msg + "ing")
+                    else:
+                        return "Can we change the subject!".format(action_msg + "ing")
+
+                action_msg = action_message
+
+                reply = Thor(action_msg)
+                reply = Milen(action_msg)
+                action_message = client_socket.send(action_message.encode('utf-8'))
+
             # Print message
             print(f'{username} > {message}')
+            print("Thor: {}".format(Thor(action_msg)))
+            print("Milen: {}".format(Milen(action_msg)))
+            action_message = client_socket.send(action_message.encode('utf-8'))
 
     except IOError as e:
         # This is normal on non blocking connections - when there are no incoming data error is going to be raised
@@ -82,36 +110,3 @@ while True:
         # Any other exception - something happened, exit
         print('Reading error: '.format(str(e)))
         sys.exit()
-
-
-
-action_message = client_socket.recv(1024)
-def Thor(action_message):
-    # action_message can be: "run", "jump", "swim"
-    if action_message == "run":
-        return "Would you like to run?".format(action_message + "ing").decode('utf-8')
-    elif action_message == "train":
-        return "how was your workout?".format(action_message + "ing").decode('utf-8')
-    elif action_message == "swim":
-        return "I cant swim".format(action_message + "ing").decode('utf-8')
-    else:
-        return "Im bored".format(action_message + "ing").decode('utf-8')
-
-
-
-def Milen(action_message):
-        if action_message == "run":
-            return "Runnnn!!!".format(action_message + "ing").decode('utf-8')
-        elif action_message == "workout":
-            return "I do like to have workout everyday".format(action_message + "ing").decode('utf-8')
-        elif action_message == "swim":
-            return "who does not like to swiiiiim!!".format(action_message + "ing").decode('utf-8')
-        else:
-            return "Can we change the subject!".format(action_message + "ing").decode('utf-8')
-
-
-reply = Thor(action_message)
-reply = Milen(action_message)
-print("Thor: {}".format(Thor(action_message)))
-print("Milen: {}".format(Milen(action_message)))
-action_message= client_socket.send(action_message.encode('utf-8'))
