@@ -9,16 +9,12 @@ PORT = 1234
 # Create a socket
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-# SO_ - socket option
-# SOL_ - socket option level
-# Sets REUSEADDR (as a socket option) to 1 on socket
 server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-# Bind, so server informs operating system that it's going to use given IP and port
-# For a server using 0.0.0.0 means to listen on all available interfaces, useful to connect locally to 127.0.0.1 and remotely to LAN interface IP
+# Bindinig IP and Port
 server_socket.bind((IP, PORT))
 
-# This makes server listen to new connections
+# This makes server listen to new connections, can be limited to
 server_socket.listen()
 
 # List of sockets for select.select()
@@ -37,7 +33,7 @@ def receive_message(client_socket):
         # Receive our "header" containing message length, it's size is defined and constant
         message_header = client_socket.recv(HEADER_LENGTH)
 
-        # If we received no data, client gracefully closed a connection, for example using socket.close() or socket.shutdown(socket.SHUT_RDWR)
+        # If we received no data, client gracefully closed a connection
         if not len(message_header):
             return False
 
@@ -51,20 +47,13 @@ def receive_message(client_socket):
 
         # If we are here, client closed connection violently, for example by pressing ctrl+c on his script
         # or just lost his connection
-        # socket.close() also invokes socket.shutdown(socket.SHUT_RDWR) what sends information about closing the socket (shutdown read/write)
+        # socket.close() also invokes socket.shutdown(socket.SHUT_RDWR)
+        # what sends information about closing the socket (shutdown read/write)
         # and that's also a cause when we receive an empty message
         return False
 
 while True:
 
-    # Calls Unix select() system call or Windows select() WinSock call with three parameters:
-    #   - rlist - sockets to be monitored for incoming data
-    #   - wlist - sockets for data to be send to (checks if for example buffers are not full and socket is ready to send some data)
-    #   - xlist - sockets to be monitored for exceptions (we want to monitor all sockets for errors, so we can use rlist)
-    # Returns lists:
-    #   - reading - sockets we received some data on (that way we don't have to check sockets manually)
-    #   - writing - sockets ready for data to be send thru them
-    #   - errors  - sockets with some exceptions
     # This is a blocking call, code execution will "wait" here and "get" notified in case any action should be taken
     read_sockets, _, exception_sockets = select.select(sockets_list, [], sockets_list)
 
